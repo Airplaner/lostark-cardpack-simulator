@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>월간 프리미엄 카드 팩 시뮬레이터</title>
+  <style>
+    body {
+      font-family: 'Pretendard';
+      src: url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/woff2/Pretendard-Regular.woff2') format('woff2');
+      padding: 2rem;
+      max-width: 500px;
+      margin: auto;
+    }
+    .input-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 1rem;
+    }
+    .input-row label {
+      flex: 1;
+      text-align: left;
+    }
+    .input-row input {
+      width: 80px;
+      text-align: right;
+    }
+    .target-inputs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-top: 0.5rem;
+    }
+    .target-inputs input {
+      width: 80px;
+      height: 40px;
+      font-size: 1.1rem;
+      text-align: center;
+    }
+    button {
+      margin-top: 1.5rem;
+      padding: 0.5rem 1rem;
+      font-size: 1rem;
+      display: block;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    #result {
+      margin-top: 2rem;
+    }
+  </style>
+</head>
+<body>
+  <h1>월간 프리미엄 카드 팩 시뮬레이터</h1>
+  <p>월간 프리미엄 카드 팩 3+1을 구매하고 전선팩까지 사용하였을 때 풀각에 성공할 확률을 구하는 시뮬레이터입니다.</p>
+  <p>아래는 패키지를 모두 구매하였을 때 얻게 되는 카드팩의 수입니다.</p>
+  <hr>
+  <div class="input-row"><label for="num_cardpack0">획득한 전설~영웅 카드 팩의 수:</label><input type="number" id="num_cardpack0" value="150" min="0"/></div>
+  <div class="input-row"><label for="num_cardpack1">획득한 전설~희귀 카드 팩의 수:</label><input type="number" id="num_cardpack1" value="150" min="0"/></div>
+  <div class="input-row"><label for="num_cardpack2">획득한 전체 카드 팩의 수:</label><input type="number" id="num_cardpack2" value="150" min="0"/></div>
+  <div class="input-row"><label for="num_cardpack_default">보너스로 획득한 전설 카드 팩의 수:</label><input type="number" id="num_cardpack_default" value="5" min="0"/></div>
+  <hr>
+  <div class="input-row"><label for="num_selectcardpack">내가 가진 전설 카드 선택 팩의 수:</label><input type="number" id="num_selectcardpack" value="2" min="0"/></div>
+  <br>
+  <p>내가 필요한 카드의 수를 종류별로 적어주세요. (없다면 0으로 남겨주세요)</p>
+  <label>카드 종류별 필요한 수:</label>
+  <div class="target-inputs">
+    <input type="number" value="1" class="target" min="0"/>
+    <input type="number" value="0" class="target" min="0"/>
+    <input type="number" value="0" class="target" min="0"/>
+    <input type="number" value="0" class="target" min="0"/>
+    <input type="number" value="0" class="target" min="0"/>
+    <input type="number" value="0" class="target" min="0"/>
+    <input type="number" value="0" class="target" min="0"/>
+    <input type="number" value="0" class="target" min="0"/>
+    <input type="number" value="0" class="target" min="0"/>
+    <input type="number" value="0" class="target" min="0"/>
+  </div>
+
+  <button onclick="runSimulation()">시뮬레이션 실행</button>
+
+  <div id="result"></div>
+
+  <script>
+    function getRandomInt(max) {
+      return Math.floor(Math.random() * max);
+    }
+
+    function foo({
+      num_cardpack0,
+      num_cardpack1,
+      num_cardpack2,
+      num_cardpack_default,
+      num_selectcardpack,
+      targetArray,
+    }) {
+      const card_pool = Array.from({ length: 22 }, (_, i) => i);
+      const target = {};
+      targetArray.forEach((v, k) => {
+        if (v > 0) target[k] = v;
+      });
+
+      let n = num_cardpack_default;
+
+      for (let i = 0; i < num_cardpack0; i++) {
+        if (Math.random() < 0.2) n++;
+      }
+      for (let i = 0; i < num_cardpack1; i++) {
+        if (Math.random() < 0.04) n++;
+      }
+      for (let i = 0; i < num_cardpack2; i++) {
+        if (Math.random() < 0.005) n++;
+      }
+
+      const cards = {};
+      for (let i = 0; i < n; i++) {
+        const card = card_pool[getRandomInt(card_pool.length)];
+        cards[card] = (cards[card] || 0) + 1;
+      }
+
+      let need = 0;
+      for (const [k, v] of Object.entries(target)) {
+        const owned = cards[k] || 0;
+        if (owned < v) need += v - owned;
+      }
+
+      return [n, need <= num_selectcardpack];
+    }
+
+    function runSimulation() {
+      const tries = 10000;
+      let cnt = 0;
+      let legends = 0;
+
+      const targetArray = Array.from(document.querySelectorAll('.target')).map(
+        (el) => parseInt(el.value) || 0
+      );
+
+      const params = {
+        num_cardpack0: parseInt(document.getElementById('num_cardpack0').value),
+        num_cardpack1: parseInt(document.getElementById('num_cardpack1').value),
+        num_cardpack2: parseInt(document.getElementById('num_cardpack2').value),
+        num_cardpack_default: parseInt(document.getElementById('num_cardpack_default').value),
+        num_selectcardpack: parseInt(document.getElementById('num_selectcardpack').value),
+        targetArray: targetArray,
+      };
+
+      for (let i = 0; i < tries; i++) {
+        const [l, ok] = foo(params);
+        legends += l;
+        if (ok) cnt++;
+      }
+
+      document.getElementById('result').innerHTML = `
+        <p><strong>성공 확률:</strong> ${(cnt * 100 / tries).toFixed(2)}%</p>
+        <p><strong>평균적으로 획득하는 전설 카드 팩의 수:</strong> ${(legends / tries).toFixed(2)}</p>
+      `;
+    }
+  </script>
+</body>
+</html>
